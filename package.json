@@ -1,0 +1,20 @@
+{
+  "name": "my-cursor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.1",
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.10.0",
+    "@google/genai": "^1.4.0",
+    "@google/generative-ai": "^0.24.1",
+    "openai": "^5.2.0"
+  }
+}
