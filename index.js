@@ -1,21 +1,43 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { exec } from 'node:child_process';
+import dotenv from 'dotenv';
 
-const GEMINI_API_KEY = "AIzaSyBzp6o16Qb_BqNN_NhLbr26AFJrHyvfa_0";
+// Load environment variables
+dotenv.config();
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+    console.error('❌ GEMINI_API_KEY not found in environment variables. Please check your .env file.');
+    process.exit(1);
+}
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash-001",
     generationConfig: {
         responseMimeType: "application/json"
     }
 });
 
 function getWheatherInfo(city) {
-    return `${cityname} has 43 Degree C`;
+    return `${city} has 43 Degree C`;
+}
+
+function executeCommand(command) {
+    return new Promise((resolve, reject) => {
+        exec(command, { shell: 'powershell.exe' }, function (err, stdout, stderr) {
+            if (err) {
+                return reject(err);
+            }
+            resolve(`stdout: ${stdout}\nstderr: ${stderr}`);
+        });
+    });
 }
 
 const TOOLS_MAP = {
     getWheatherInfo: getWheatherInfo,
+    executeCommand: executeCommand,
 };
 
 const SYSTEM_PROMPT = `
@@ -34,9 +56,20 @@ const SYSTEM_PROMPT = `
     - Output must be strictly JSON
     - Only call tool action from Available Tools only.
     -Strictly follow the output format in JSON
+    - You are running on Windows, use Windows PowerShell commands (like 'type' instead of 'cat', 'dir' instead of 'ls')
+    - To create files with content, use: @'
+<content>
+'@ | Out-File -FilePath "filename" -Encoding UTF8
+    - For simple files, use: New-Item -Path "filename" -ItemType File -Force
+    - For directories, use: New-Item -Path "foldername" -ItemType Directory -Force
+    - Use double quotes around file paths to handle spaces properly
+    - Use -Force parameter to overwrite existing files/folders if needed
+    - For multi-line content, use proper here-string syntax with @' and '@ on separate lines
+    - Make sure HTML, CSS, JS code is properly formatted with line breaks
 
    Available Tools:
    - getWheatherInfo(city: string): string
+   - executeCommand(command): string Executes a given powershell command on user's device and returns the STDOUT and STDERR.
 
     Example:
     START: What is wheather of Patiala?
@@ -62,95 +95,85 @@ const SYSTEM_PROMPT = `
     { "step": "string", "tool": "string", "input": "string", "content": "string" }
 `;
 
-const messages = [
-    {
-        role: 'system',
-        content: SYSTEM_PROMPT,
-    },
-];
 
-const userQuery = ''
-messages.push({
-    role: 'user',
-    content: userQuery,
-});
-
-while (true) {
-    const response = await client.chat.completions.create({
-        model: "gpt-4.1",
-        response_format: {
-            "type": "json_object"
-        },
-        messages: messages
-    })
-
-    messages.push({ 'role': 'assistant', 'content': response.choices[0].message.content });
-    const parsed_response = JSON.parse(response.choices[0].message.content);
-
-    if (parsed_response.step && parsed_response.step === "think") {
-        console.log(`🧠: ${parsed_response.content}`);
-        continue;
-    }
-    if (parsed_response.step && parsed_response.step === "output") {
-        console.log(`🤖: ${parsed_response.content}`);
-        break;
-
-    }
-    if (parsed_response.step && parsed_response.step === "action") {
-        const tool = parsed_response.tool
-        const input = parsed_response.input
-
-
-        const value = TOOLS_MAP[tool](input);
-        console.log(`⛏️: Tool Call ${tool}: (${input}) ${value}`);
-
-        messages.push({
-            "role": "assistant",
-            "content": JSON.stringify({ "step": "observe", "content": value })
-        });
-        continue;
-    }
-}
 
 async function init() {
-    const response = await client.chat.completions.create({
-        model: "gpt-4.1-mini",
-        response_format: {
-            "type": "json_object"
+    const messages = [
+        {
+            role: 'system',
+            content: SYSTEM_PROMPT,
         },
-        messages: [
-            {
-                role: "system",
-                content: SYSTEM_PROMPT,
-            },
-            {
-                role: "user",
-                content: "What is wheather of Delhi?"
-            },
-            {
-                role: 'assistant',
-                content: '{ "step": "think", "content": "The user is asking for the weather of Delhi." }',
-            },
-            {
-                role: 'assistant',
-                content: '{ "step": "think", "content": "From the available tools, I must call getWheatherInfo tool for Delhi as input." }',
-            },
-            {
-                role: 'assistant',
-                content: '{ "step": "action", "tool": "getWheatherInfo", "input": "Delhi", "content": "" }',
-            },
-            {
-                role: 'assistant',
-                content: '{ "step": "observe", "content": "42 Degree C" }',
-            },
-            {
-                role: 'assistant',
-                content: '{ "step": "think", "content": "The output of getWheatherInfo for Delhi is 42 Degree C" }',
-            },
-        ],
-    });
-    console.log(response.choices[0].message.content);
-}
+    ];
 
+    const userQuery = 'Create a folder todo app and create a todo app with HTML CSS AND JS fully working';
+    messages.push({
+        role: 'user',
+        content: userQuery,
+    });
+
+    while (true) {
+        // Convert messages to Gemini format
+        let conversationHistory = [];
+
+        // Add system prompt as the first user message
+        conversationHistory.push({
+            role: 'user',
+            parts: [{ text: messages[0].content }]
+        });
+        conversationHistory.push({
+            role: 'model',
+            parts: [{ text: 'I understand. I will follow the workflow and respond in JSON format.' }]
+        });
+
+        // Add conversation messages
+        for (let i = 1; i < messages.length; i++) {
+            const msg = messages[i];
+            if (msg.role === 'user') {
+                conversationHistory.push({
+                    role: 'user',
+                    parts: [{ text: msg.content }]
+                });
+            } else if (msg.role === 'assistant') {
+                conversationHistory.push({
+                    role: 'model',
+                    parts: [{ text: msg.content }]
+                });
+            }
+        }
+
+        const result = await model.generateContent({
+            contents: conversationHistory
+        });
+
+        const response = await result.response;
+        const responseText = response.text();
+
+        messages.push({ 'role': 'assistant', 'content': responseText });
+        const parsed_response = JSON.parse(responseText);
+
+        if (parsed_response.step && parsed_response.step === "think") {
+            console.log(`🧠: ${parsed_response.content}`);
+            continue;
+        }
+        if (parsed_response.step && parsed_response.step === "output") {
+            console.log(`🤖: ${parsed_response.content}`);
+            break;
+
+        }
+        if (parsed_response.step && parsed_response.step === "action") {
+            const tool = parsed_response.tool
+            const input = parsed_response.input
+
+            const value = await TOOLS_MAP[tool](input);
+            console.log(`⛏️: Tool Call ${tool}: (${input}) ${value}`);
+
+            messages.push({
+                "role": "assistant",
+                "content": JSON.stringify({ "step": "observe", "content": value })
+            });
+            continue;
+        }
+    }
+}
 
 init();
