@@ -1,14 +1,8 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { OpenAI } from "openai";
 
-const GEMINI_API_KEY = "AIzaSyBzp6o16Qb_BqNN_NhLbr26AFJrHyvfa_0";
+const OPEN_API_KEY = "sk-12345678901234567890123456789012";
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
-    generationConfig: {
-        responseMimeType: "application/json"
-    }
-});
+const client = new OpenAI({ apiKey: OPEN_API_KEY });
 
 function addTwoNumbers(x, y) {
     return x + y;
@@ -60,40 +54,27 @@ const SYSTEM_PROMPT = `
 
 
 async function init() {
-    try {
-        // Prepare the conversation history for Gemini
-        const conversationHistory = [
+    const response = await client.chat.completions.create({
+        model: "gpt-4.1-mini",
+        response_format: {
+            "type": "json_object"
+        },
+        messages: [
             {
-                role: "user",
-                parts: [{ text: SYSTEM_PROMPT }]
-            },
-            {
-                role: "model",
-                parts: [{ text: "I understand. I will follow the START, THINK, ACTION, OBSERVE, OUTPUT workflow and respond in JSON format only." }]
-            },
-            {
-                role: "user",
-                parts: [{ text: "What is wheather of Delhi?" }]
-            },
-            {
-                role: "model",
-                parts: [{ text: '{ "step": "think", "content": "The user is asking for the wheather of Delhi." }' }]
+                role: "system",
+                content: SYSTEM_PROMPT,
             },
             {
                 role: "user",
-                parts: [{ text: "Continue to the next step." }]
+                content: "What is wheather of Delhi?"
+            },
+            {
+                role: 'assistant',
+                content: '{ "step": "think", "content": "The user is asking for the wheather of Delhi." }'
             }
-        ];
-
-        const result = await model.generateContent({
-            contents: conversationHistory
-        });
-        
-        const response = await result.response;
-        console.log(response.text());
-    } catch (error) {
-        console.error('Error generating content:', error);
-    }
+        ],
+    });
+    console.log(response.choices[0].message.content);
 }
 
 init();
