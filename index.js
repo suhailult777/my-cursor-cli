@@ -1,12 +1,22 @@
-import { OpenAI } from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const OPEN_API_KEY = "sk-12345678901234567890123456789012";
+const GEMINI_API_KEY = "AIzaSyBzp6o16Qb_BqNN_NhLbr26AFJrHyvfa_0";
 
-const client = new OpenAI({ apiKey: OPEN_API_KEY });
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    generationConfig: {
+        responseMimeType: "application/json"
+    }
+});
 
-function addTwoNumbers(x, y) {
-    return x + y;
+function getWheatherInfo(city) {
+    return `${cityname} has 43 Degree C`;
 }
+
+const TOOLS_MAP = {
+    getWheatherInfo: getWheatherInfo,
+};
 
 const SYSTEM_PROMPT = `
     You are an helpful AI Assistant who is designed to resolve user query. If you think, user query needs a tool invocation, just tell me the tool name with parameters.
@@ -52,6 +62,55 @@ const SYSTEM_PROMPT = `
     { "step": "string", "tool": "string", "input": "string", "content": "string" }
 `;
 
+const messages = [
+    {
+        role: 'system',
+        content: SYSTEM_PROMPT,
+    },
+];
+
+const userQuery = ''
+messages.push({
+    role: 'user',
+    content: userQuery,
+});
+
+while (true) {
+    const response = await client.chat.completions.create({
+        model: "gpt-4.1",
+        response_format: {
+            "type": "json_object"
+        },
+        messages: messages
+    })
+
+    messages.push({ 'role': 'assistant', 'content': response.choices[0].message.content });
+    const parsed_response = JSON.parse(response.choices[0].message.content);
+
+    if (parsed_response.step && parsed_response.step === "think") {
+        console.log(`🧠: ${parsed_response.content}`);
+        continue;
+    }
+    if (parsed_response.step && parsed_response.step === "output") {
+        console.log(`🤖: ${parsed_response.content}`);
+        break;
+
+    }
+    if (parsed_response.step && parsed_response.step === "action") {
+        const tool = parsed_response.tool
+        const input = parsed_response.input
+
+
+        const value = TOOLS_MAP[tool](input);
+        console.log(`⛏️: Tool Call ${tool}: (${input}) ${value}`);
+
+        messages.push({
+            "role": "assistant",
+            "content": JSON.stringify({ "step": "observe", "content": value })
+        });
+        continue;
+    }
+}
 
 async function init() {
     const response = await client.chat.completions.create({
@@ -70,11 +129,28 @@ async function init() {
             },
             {
                 role: 'assistant',
-                content: '{ "step": "think", "content": "The user is asking for the wheather of Delhi." }'
-            }
+                content: '{ "step": "think", "content": "The user is asking for the weather of Delhi." }',
+            },
+            {
+                role: 'assistant',
+                content: '{ "step": "think", "content": "From the available tools, I must call getWheatherInfo tool for Delhi as input." }',
+            },
+            {
+                role: 'assistant',
+                content: '{ "step": "action", "tool": "getWheatherInfo", "input": "Delhi", "content": "" }',
+            },
+            {
+                role: 'assistant',
+                content: '{ "step": "observe", "content": "42 Degree C" }',
+            },
+            {
+                role: 'assistant',
+                content: '{ "step": "think", "content": "The output of getWheatherInfo for Delhi is 42 Degree C" }',
+            },
         ],
     });
     console.log(response.choices[0].message.content);
 }
+
 
 init();
