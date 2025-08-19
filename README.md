@@ -1,6 +1,6 @@
 # My Cursor AI Assistant
 
-A Node.js application that uses Google's Gemini AI to create a todo app and perform various tasks.
+Interactive Node.js CLI supporting either Google's Gemini or local Ollama models with a structured tool/workflow protocol.
 
 ## Setup
 
@@ -19,17 +19,29 @@ A Node.js application that uses Google's Gemini AI to create a todo app and perf
    - Get your Gemini API key from [Google AI Studio](https://ai.google.dev/)
    - Replace `your_gemini_api_key_here` in `.env` with your actual API key
 
-3. **Run the application:**
+3. **(Optional) Adjust adaptive Ollama timeouts:**
+
+   - Defaults: long think = 300000 ms, short action = 60000 ms
+   - To override, uncomment in `.env`:
+     ```
+     OLLAMA_LONG_TIMEOUT_MS=300000
+     OLLAMA_SHORT_TIMEOUT_MS=60000
+     ```
+
+4. **Run the application:**
    ```bash
-   node index.js
+   pnpm run dev
    ```
 
 ## Features
 
-- **AI-powered task execution**: Uses Gemini AI to understand and execute user requests
-- **File operations**: Can create folders, files, and execute PowerShell commands
-- **Todo app generation**: Automatically creates a functional todo app with HTML, CSS, and JS
-- **Environment variable support**: Secure API key management
+- Dual provider support: Gemini API or local Ollama models
+- Structured START → THINK → ACTION → OBSERVE → OUTPUT loop
+- Adaptive timeouts for Ollama (long think vs short action cycles)
+- Robust JSON parsing with auto-repair attempts
+- Safe tool abstraction for file and directory creation
+- Automatic organized project folder generation
+- Secure environment variable management
 
 ## Project Structure
 
@@ -47,8 +59,10 @@ A Node.js application that uses Google's Gemini AI to create a todo app and perf
 
 ## Available Tools
 
-- `getWheatherInfo(city)`: Get weather information for a city
-- `executeCommand(command)`: Execute PowerShell commands on Windows
+- `getWheatherInfo(city)` – Dummy weather info
+- `executeCommand(command)` – Execute PowerShell commands (non file-write)
+- `createDirectory({ path })` – Create a directory (recursive)
+- `writeFile({ path, content })` – Create/overwrite a file (preferred for file content)
 
 ## Security
 
@@ -60,5 +74,14 @@ A Node.js application that uses Google's Gemini AI to create a todo app and perf
 
 - Node.js 18+
 - pnpm package manager
-- Windows (for PowerShell command execution)
-- Google Gemini API key
+- Windows (PowerShell environment expected)
+- (Optional) Google Gemini API key if using Gemini provider
+
+## Adaptive Timeout Environment Variables
+
+| Variable                | Purpose                         | Default |
+| ----------------------- | ------------------------------- | ------- |
+| OLLAMA_LONG_TIMEOUT_MS  | Max ms for THINK responses      | 300000  |
+| OLLAMA_SHORT_TIMEOUT_MS | Max ms for ACTION/OUTPUT cycles | 60000   |
+
+Leave unset to use defaults. Increase long timeout for heavier reasoning models if needed.

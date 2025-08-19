@@ -15,7 +15,9 @@
     "@google-cloud/vertexai": "^1.10.0",
     "@google/genai": "^1.4.0",
     "@google/generative-ai": "^0.24.1",
+    "axios": "^1.11.0",
     "dotenv": "^16.5.0",
+    "inquirer": "^12.9.3",
     "openai": "^5.2.0"
   }
 }
