@@ -10,7 +10,7 @@ Interactive Node.js CLI supporting either Google's Gemini or local Ollama models
    pnpm install
    ```
 
-2. **Environment Configuration:**
+2. **Environment Configuration (Recommended for Gemini):**
 
    - Copy `.env.example` to `.env`:
      ```bash
@@ -18,6 +18,8 @@ Interactive Node.js CLI supporting either Google's Gemini or local Ollama models
      ```
    - Get your Gemini API key from [Google AI Studio](https://ai.google.dev/)
    - Replace `your_gemini_api_key_here` in `.env` with your actual API key
+
+   **Note:** If you don't set up the `.env` file, the CLI will prompt you to enter your Gemini API key manually when you select the Gemini option.
 
 3. **(Optional) Adjust adaptive Ollama timeouts:**
 
@@ -35,13 +37,14 @@ Interactive Node.js CLI supporting either Google's Gemini or local Ollama models
 
 ## Features
 
-- Dual provider support: Gemini API or local Ollama models
-- Structured START → THINK → ACTION → OBSERVE → OUTPUT loop
-- Adaptive timeouts for Ollama (long think vs short action cycles)
-- Robust JSON parsing with auto-repair attempts
-- Safe tool abstraction for file and directory creation
-- Automatic organized project folder generation
-- Secure environment variable management
+- **Dual provider support**: Gemini API or local Ollama models
+- **Flexible API key management**: Auto-loads from `.env` or prompts for manual entry
+- **Structured workflow**: START → THINK → ACTION → OBSERVE → OUTPUT loop
+- **No timeout restrictions**: Unlimited processing time for complex tasks
+- **Robust JSON parsing**: Auto-repair attempts for malformed responses
+- **Safe tool abstraction**: File and directory creation with proper organization
+- **Automatic project structure**: Creates organized folders for generated projects
+- **Persistent configuration**: Remembers your provider choice and settings
 
 ## Project Structure
 
@@ -63,6 +66,29 @@ Interactive Node.js CLI supporting either Google's Gemini or local Ollama models
 - `executeCommand(command)` – Execute PowerShell commands (non file-write)
 - `createDirectory({ path })` – Create a directory (recursive)
 - `writeFile({ path, content })` – Create/overwrite a file (preferred for file content)
+
+## API Key Configuration
+
+### Gemini API Key Setup
+
+**Option 1: Environment File (Recommended)**
+
+1. Create a `.env` file from the template
+2. Add your API key: `GEMINI_API_KEY=your_actual_key_here`
+3. Run `pnpm run dev` - CLI will auto-detect and use the key
+
+**Option 2: Manual Entry**
+
+1. Run `pnpm run dev` without setting up `.env`
+2. Select "Configure Gemini API Key"
+3. Enter your API key when prompted
+4. CLI will test and save the key for future sessions
+
+**Getting your API key:**
+
+- Visit [Google AI Studio](https://ai.google.dev/)
+- Create an account and generate an API key
+- Copy the key to your `.env` file or use it when prompted
 
 ## Security
 

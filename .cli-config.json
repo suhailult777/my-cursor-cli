@@ -1,4 +1,4 @@
 {
-  "provider": "ollama",
-  "model": "qwen3:8b"
+  "provider": "gemini",
+  "apiKey": "AIzaSyBzp6o16Qb_BqNN_NhLbr26AFJrHyvfa_0"
 }

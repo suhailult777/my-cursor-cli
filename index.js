@@ -339,14 +339,26 @@ async function configureGemini() {
     console.log('\n🌟 Gemini API Configuration');
     console.log('============================\n');
 
-    const { apiKey } = await inquirer.prompt([
-        {
-            type: 'password',
-            name: 'apiKey',
-            message: 'Enter your Gemini API key:',
-            mask: '*'
-        }
-    ]);
+    // First check if API key exists in .env file
+    let apiKey = process.env.GEMINI_API_KEY;
+
+    if (apiKey) {
+        console.log('✅ Found Gemini API key in .env file');
+        console.log('🔄 Testing API key...');
+    } else {
+        console.log('💡 No API key found in .env file');
+
+        const { inputApiKey } = await inquirer.prompt([
+            {
+                type: 'password',
+                name: 'inputApiKey',
+                message: 'Enter your Gemini API key:',
+                mask: '*'
+            }
+        ]);
+
+        apiKey = inputApiKey;
+    }
 
     // Test the API key
     try {
